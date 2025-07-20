@@ -1,50 +1,5 @@
 # turborepo monorepo with Next.js 15 + NestJS 11 + shadcn
 
-This template is for creating a comprehensive Enterprise level app using Next.js 15 (frontend) and NestJS 11 (backend).
-Use database of your choice (MySQL, PostgreSQL, etc.) and configure it in the app.
-
-## Usage
-
-You can use or follow the step 1 to clone.
-```bash
-pnpm dlx superepo@latest init
-```
-
-1. Clone the repository
-
-```bash
-git clone https://github.com/mohitarora/superepo.git
-
-cd superepo
-```
-
-2. Setup Environment Variables
-
-Copy .env.example to .env in both apps/api and apps/web
-```bash
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-```
-
-3. Install dependencies
-
-```bash
-pnpm install
-```
-
-4. Start the database (optional)
-
- for Postgres:
-```bash
-docker compose up -d
-```
-then update the .env file with the new password (default **DB_USERNAME**=postgres, **DB_DATABASE**=postgres) 
-
-5. Start the app
-
-```bash
-pnpm dev
-```
 
 ## 🏗️ Architecture Overview (Lender-Marketplace)
 
@@ -107,6 +62,4 @@ sequenceDiagram
 * **Socket.IO:** low-latency chat & status updates without polling.
 * **Turborepo:** minimal config yet fast builds; Nx can be layered later if needed.
 
----
 
-> Paste this section into your project’s **README.md** to give contributors (or future you) a concise mental map of how everything plugs together.
