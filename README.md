@@ -34,10 +34,9 @@ pnpm install
 
 4. Start the database (optional)
 
-example for Postgres:
+ for Postgres:
 ```bash
-docker pull postgres
-docker run -d --name <container_name> -p 5432:5432 -e POSTGRES_PASSWORD=<new_password> postgres
+docker compose up -d
 ```
 then update the .env file with the new password (default **DB_USERNAME**=postgres, **DB_DATABASE**=postgres) 
 
@@ -47,67 +46,67 @@ then update the .env file with the new password (default **DB_USERNAME**=postgre
 pnpm dev
 ```
 
-6. Visit http://localhost:3000
+## 🏗️ Architecture Overview (Lender-Marketplace)
 
-7. Visit http://localhost:4000/api/docs
-
-If you need to install new packages, you can add to the respective app folder:
-
-```bash
-pnpm add <package-name>
+```
+superepo/
+├─ apps/
+│  ├─ web/     ← Next.js 15 dashboard (Broker • Lender • Admin)
+│  └─ api/     ← NestJS 11 HTTP + WebSocket API
+├─ packages/
+│  ├─ ui/      ← shared shadcn-based components
+│  └─ shared/  ← TypeScript DTOs, validators, utils
+└─ docker-compose.yml  ← Postgres • Redis • (future) minio
 ```
 
-## Adding shadcn components
+### 1. Frontend – **Next.js 15**
 
-To add shadcn components to your app, run the following command at the root of your `web` app:
+* **App Router** with role-based route groups (`/broker`, `/lender`, `/admin`)
+* TailwindCSS + shadcn/ui; RSC + Server Actions call the API directly
+* Auth handled by **NextAuth** (credentials provider) – stores JWT returned by the API
+* Socket.IO client for real-time deal & chat updates
 
-```bash
-pnpm dlx shadcn@latest add button -c apps/web
+### 2. Backend – **NestJS 11**
+
+| Layer             | Details                                                               |
+| ----------------- | --------------------------------------------------------------------- |
+| **HTTP & WS**     | REST controllers (`/deals`, `/quotes`), WebSocket gateway (`/chat`)   |
+| **Prisma ORM**    | PostgreSQL models: `User`, `Deal`, `Quote`, `Message`, `Wallet`       |
+| **Auth module**   | JWT (access + refresh) with optional TOTP (speakeasy)                 |
+| **Queues**        | **BullMQ** on Redis – tasks: lender-matching, PDF export, email/Slack |
+| **External APIs** | iwoca OpenLending, future Plaid/TrueLayer for open-banking            |
+| **Docs**          | Swagger at `/api/docs` (auto-generated from decorators)               |
+
+### 3. Infrastructure
+
+* **Turborepo** – fast incremental builds; single `pnpm dev` spins up web + api
+* **Docker Compose** – local Postgres 16 (`5432`) & Redis 7 (`6379`)
+* **ENV management** – per-app `.env` files; secrets never committed
+* **CI/CD** – GitHub Actions → Turbo cache → Vercel (web) & Fly.io / Render (api)
+
+### 4. High-level Data Flow
+
+```mermaid
+sequenceDiagram
+    Broker UI->>API: POST /deals
+    API->>Prisma/Postgres: Persist Deal
+    API--)BullMQ(matcher): enqueue({dealId})
+    BullMQ-->Matcher Worker: Job picked
+    Matcher Worker-->>Lender APIs: GET /quote
+    Lender APIs-->>Matcher Worker: APR, term, fees
+    Matcher Worker->>Postgres: save Quote(s)
+    Matcher Worker-->>Socket.IO: emit "quote-ready"
+    Socket.IO-->>Broker UI: real-time notification
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+### 5. Why This Design?
 
-## Using components
+* **Single-repo DX:** shared types prevent contract drift; atomic PRs cover UI + API.
+* **Prisma + Postgres:** strong relations, migrations, type-safe client.
+* **BullMQ:** isolates CPU- or I/O-heavy tasks; keeps API responsive.
+* **Socket.IO:** low-latency chat & status updates without polling.
+* **Turborepo:** minimal config yet fast builds; Nx can be layered later if needed.
 
-To use the components in your app, import them from the `ui` package.
+---
 
-```tsx
-import { Button } from "@workspace/ui/components/ui/button"
-```
-
-## Functionality
-
-- Create New user from Register page
-- Login to app using credentials from Login page
-- Go to Settings page and invite a new user
-- Copy the invitation URL and register the user (either in another browser or in incognito mode)
-- Login using new user credentials from Login page
-
-- NOTE: Now you have successfully created an admin user as well as a regular user.
-
-## Features
-
-**Core Architecture**
-- Next.js 15 with Turbopack
-- Monorepo setup using Turborepo
-- Shared ESLint/TypeScript configs
-
-**Functionality**
-- Authentication (NextAuth.js)
-- Form validation with Zod + react-hook-form
-- Data visualization with Recharts
-
-
-## Packages 
-
-- Next.js 15
-- NestJS 11
-- shadcn/ui
-- next-auth
-- passport
-- TypeORM
-
-## License
-
-Superepo is released under the [MIT License](https://opensource.org/licenses/MIT).
-# Monorepo
+> Paste this section into your project’s **README.md** to give contributors (or future you) a concise mental map of how everything plugs together.

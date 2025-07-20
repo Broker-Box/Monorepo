@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      # ────── credentials ──────
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lender_marketplace
+      # ────── tune for local dev ──────
+      PGDATA: /var/lib/postgresql/data/pgdata   # keeps init scripts separate
+    ports:
+      - "5432:5432"       # hostPort:containerPort
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  db-data:

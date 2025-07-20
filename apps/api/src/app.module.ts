@@ -8,6 +8,11 @@ import { User } from './users/user.entity';
 import { Tenant } from './tenants/tenant.entity';
 import { Invitation } from './tenants/invitation.entity';
 import { PassportModule } from '@nestjs/passport';
+import { UserModule } from './user/user.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
@@ -34,8 +39,9 @@ import { PassportModule } from '@nestjs/passport';
     AuthModule,
     UsersModule,
     TenantsModule,
+    UserModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [AuthController],
+  providers: [AuthService],
 })
 export class AppModule { }
